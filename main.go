@@ -22,7 +22,6 @@ func init() {
 		}}),
 	)
 	slog.SetDefault(logger)
-
 }
 
 func main() {
