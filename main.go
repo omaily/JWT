@@ -27,13 +27,11 @@ func init() {
 
 func main() {
 	conf := config.MustLoad()
-	logger.Info("conf Server", struct {
-		Addr string
-		Port string
-	}{
-		Addr: conf.HTTPServer.Address,
-		Port: conf.HTTPServer.Port,
-	})
+	logger.Info("conf Server",
+		slog.Group("Server",
+			slog.String("Addr", conf.HTTPServer.Address),
+			slog.String("Port", conf.HTTPServer.Port)))
+
 	logger.Debug("debug enables")
 
 }
