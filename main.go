@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/omaily/JWT/config"
+	"github.com/omaily/JWT/internal/server"
 )
 
 var (
@@ -27,11 +28,11 @@ func init() {
 
 func main() {
 	conf := config.MustLoad()
-	logger.Info("conf Server",
-		slog.Group("Server",
-			slog.String("Addr", conf.HTTPServer.Address),
-			slog.String("Port", conf.HTTPServer.Port)))
 
-	logger.Debug("debug enables")
+	serv, err := server.NewServer(&conf.HTTPServer)
+	if err != nil {
+		logger.Error("could not initialize chi-router: %w", err)
+	}
 
+	serv.Start()
 }
