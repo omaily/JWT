@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 
 	"github.com/omaily/JWT/config"
-	model "github.com/omaily/JWT/internal/model/user"
 	"github.com/omaily/JWT/internal/server"
 	"github.com/omaily/JWT/internal/storage"
 )
@@ -38,22 +36,10 @@ func main() {
 		return
 	}
 
-	insertedID, err := storage.CreateAccount(context.Background(), &model.User{
-		Email:        "new@mail.ru",
-		Name:         "test",
-		Password:     "test",
-		Subscription: "random",
-	})
-	if err != nil {
-		logger.Error("error insert")
-		return
-	}
-	logger.Info("insertedID", insertedID)
-
-	serv, err := server.NewServer(&conf.HTTPServer)
+	serv, err := server.NewServer(&conf.HTTPServer, storage)
 	if err != nil {
 		logger.Error("could not initialize chi-router: %w", err)
 	}
 
-	serv.Start()
+	serv.Start(logger)
 }

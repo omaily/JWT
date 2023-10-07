@@ -16,7 +16,7 @@ import (
 func (st *Storage) identification(ctx context.Context, user *model.User) (*model.User, error) {
 
 	logger := slog.With(
-		slog.String("konponent mongo", "user.identification"),
+		slog.String("konponent", "storage.user.identification"),
 	)
 
 	var result model.User
@@ -32,12 +32,12 @@ func (st *Storage) identification(ctx context.Context, user *model.User) (*model
 func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string, error) {
 
 	logger := slog.With(
-		slog.String("konponent mongo", "user.CreateAccount"),
+		slog.String("konponent", "storage.user.CreateAccount"),
 	)
 
 	passwordCript, err := user.SetPassword()
 	if err != nil {
-		logger.Error("bcrypt library generation error", err)
+		logger.Error("bcrypt library generation error", slog.String("err", err.Error()))
 		return "error", errors.New("server internal error")
 	}
 
@@ -48,9 +48,8 @@ func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string,
 		Password:  string(passwordCript),
 		CreatedAt: time.Now(),
 	})
-
 	if err != nil {
-		logger.Error("mongoDB error insert", err)
+		logger.Error("error insert", slog.String("err", err.Error()))
 		if mongo.IsDuplicateKeyError(err) { // ошибка unique index email_1
 			return "error", errors.New("this email is already registered")
 		}
@@ -58,14 +57,14 @@ func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string,
 	}
 
 	temp := result.InsertedID.(primitive.ObjectID).Hex()
-	logger.Info("inserted user grantor", temp)
+	logger.Info("inserted user", slog.String("id", temp))
 	return temp, nil
 }
 
 func (st *Storage) LoginAccount(ctx context.Context, user *model.User) (string, error) {
 
 	logger := slog.With(
-		slog.String("konponent mongo", "user.LoginAccount"),
+		slog.String("konponent", "storage.user.LoginAccount"),
 	)
 
 	storedUser, err := st.identification(ctx, user)

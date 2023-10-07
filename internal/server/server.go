@@ -12,15 +12,17 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/render"
 	"github.com/omaily/JWT/config"
+	"github.com/omaily/JWT/internal/server/middlewareRedef"
+	"github.com/omaily/JWT/internal/storage"
 )
 
 type apiServer struct {
-	conf *config.HTTPServer
+	conf    *config.HTTPServer
+	storage *storage.Storage
 }
 
-func NewServer(conf *config.HTTPServer) (*apiServer, error) {
+func NewServer(conf *config.HTTPServer, instance *storage.Storage) (*apiServer, error) {
 	if conf == nil {
 		return nil, errors.New("configuration files are not initialized")
 	}
@@ -29,15 +31,16 @@ func NewServer(conf *config.HTTPServer) (*apiServer, error) {
 	}
 
 	return &apiServer{
-		conf: conf,
+		conf:    conf,
+		storage: instance,
 	}, nil
 }
 
-func (s *apiServer) Start() error {
+func (s *apiServer) Start(logger *slog.Logger) error {
 
 	ser := &http.Server{
 		Addr:         s.conf.Port,
-		Handler:      s.router(),
+		Handler:      s.router(logger),
 		ReadTimeout:  s.conf.Timeout * time.Second,
 		WriteTimeout: s.conf.Timeout * 2 * time.Second,
 		IdleTimeout:  s.conf.IdleTimeout * time.Second,
@@ -61,17 +64,15 @@ func (s *apiServer) Start() error {
 	return ser.Shutdown(ctx)
 }
 
-func (s *apiServer) router() http.Handler {
+func (s *apiServer) router(logger *slog.Logger) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
+	router.Use(middlewareRedef.New(logger))
+
 	router.Post("/", s.helloWorld())
+	router.Post("/api/auth/createAccount", s.authorized(s.storage.CreateAccount))
+	router.Post("/api/auth/login", s.authorized(s.storage.LoginAccount))
 
 	return router
-}
-
-func (s *apiServer) helloWorld() http.HandlerFunc {
-	return func(write http.ResponseWriter, request *http.Request) {
-		render.JSON(write, request, "Hello World")
-	}
 }
