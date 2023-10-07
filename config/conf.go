@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	HTTPServer `yaml:"http_server"`
+	Storage    `yaml:"storage"`
 }
 
 type HTTPServer struct {
@@ -17,6 +18,13 @@ type HTTPServer struct {
 	Port        string        `yaml:"port" env-default:":4000"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+}
+type Storage struct {
+	Host     string `yaml:"host" env-default:"localhost"`
+	Port     int    `yaml:"port" env-default:"5432"`
+	Role     string `yaml:"user" env-default:"postgres"`
+	Pass     string `yaml:"pass" env-default:""`
+	Database string `yaml:"database" env-default:"postgres"`
 }
 
 var cfg Config

@@ -73,6 +73,5 @@ func (s *apiServer) router() http.Handler {
 func (s *apiServer) helloWorld() http.HandlerFunc {
 	return func(write http.ResponseWriter, request *http.Request) {
 		render.JSON(write, request, "Hello World")
-		return
 	}
 }

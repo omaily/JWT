@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  db:
+    image: mongo
+    container_name: instanse_mongo
+    restart: always
+    env_file: mongo.env
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/mongodb/data
+      - ./migrate/mongo-init.js:/docker-entrypoint-initdb.d/init-mongo.js
+
+volumes:
+    mongo_data:
