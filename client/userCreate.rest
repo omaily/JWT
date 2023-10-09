@@ -1,0 +1,11 @@
+@host = localhost:4000
+// Register User
+POST http://{{host}}/api/auth/createAccount HTTP/1.1
+content-type: application/json
+
+{
+    "email": "new@mail.ru",
+    "name": "admin", 
+    "password": "password",
+    "subscription":"random"
+}

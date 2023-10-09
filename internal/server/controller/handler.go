@@ -39,26 +39,21 @@ func authorized(f func(context.Context, *model.User) (string, error)) http.Handl
 
 		user, err := decodeJSON(request)
 		if err != nil {
-			slog.Error("Failed to decode json", err)
-			render.JSON(write, request, libResponse.Error(errors.New("failed to decode request json")))
+			slog.Error("Failed to decode json", slog.String("err", err.Error()))
+			render.Render(write, request, libResponse.ErrInvalidRequest(errors.New("failed to decode request json")))
 			return
 		}
 
 		valid := validate.ValidateUser(user)
 		if valid != nil {
-			slog.Error("Failed to validate json", err)
-			render.JSON(write, request, valid)
+			slog.Error("Failed to validate json")
+			render.Render(write, request, valid)
 			return
 		}
 
 		insertedID, err := f(request.Context(), user)
 		if err != nil {
-			switch err := err.(type) {
-			case *libResponse.InternalError:
-				render.JSON(write, request, libResponse.ServerError())
-			default:
-				render.JSON(write, request, libResponse.Error(err))
-			}
+			render.Render(write, request, libResponse.ErrReview(err))
 			return
 		}
 
@@ -72,20 +67,20 @@ func createToken(f func(context.Context, *model.User) (string, error)) http.Hand
 		user, err := decodeJSON(request)
 		if err != nil {
 			slog.Error("Failed to decode json", err)
-			render.JSON(write, request, libResponse.Error(errors.New("failed to decode request json")))
+			render.Render(write, request, libResponse.ErrInvalidRequest(errors.New("failed to decode request json")))
 			return
 		}
 
 		valid := validate.ValidateUser(user)
 		if valid != nil {
-			slog.Error("Failed to validate json", err)
-			render.JSON(write, request, valid)
+			slog.Error("Failed to validate json")
+			render.Render(write, request, valid)
 			return
 		}
 
 		token, err := f(request.Context(), user)
 		if err != nil {
-			render.JSON(write, request, libResponse.Error(err))
+			render.Render(write, request, libResponse.ErrInvalidRequest(err))
 			return
 		}
 

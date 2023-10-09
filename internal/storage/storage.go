@@ -22,7 +22,7 @@ func NewStorage(cs *config.Storage) (*Storage, error) {
 	opts := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@%s:%d", cs.Role, cs.Pass, cs.Host, cs.Port))
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		slog.Error("unable to create connection pool: %w", err)
+		slog.Error("unable to create connection pool:", slog.String("err", err.Error()))
 		return nil, err
 	}
 

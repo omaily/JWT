@@ -1,25 +1,26 @@
 package response
 
 type ResponseFetch struct {
-	Status      string          `json:"status"`
-	StatusCode  int             `json:"status_code"`
-	TextError   string          `json:"error,omitempty"`
-	Id          []string        `json:"id,omitempty"` //возвращается при Insert или Update
-	AccessToken string          `json:"access_token,omitempty"`
-	Valid       []ValidateError `json:"validateError,omitempty"`
+	Status      string   `json:"status"`
+	StatusCode  int      `json:"status_code"`
+	TextError   string   `json:"error,omitempty"`
+	Id          []string `json:"id,omitempty"` //возвращается при Insert или Update
+	AccessToken string   `json:"access_token,omitempty"`
 }
 
-type ValidateError struct {
-	NameStruct    string `json:"name_struct"`
-	Type          string `json:"type"`
-	NameFieldJson string `json:"name_fieldJson"`
-	ActualTag     string `json:"actual_tag"`
-	Value         string `json:"value"`
-	Message       string `json:"message"`
+func Ok(a ...string) *ResponseFetch {
+	// проверка на nil не нужна, так как поле id опционально
+	return &ResponseFetch{
+		Status:     "Ok",
+		StatusCode: 200,
+		Id:         a,
+	}
 }
 
-type InternalError struct{}
-
-func (m *InternalError) Error() string {
-	return "Internal error"
+func Bearer(token string) *ResponseFetch {
+	return &ResponseFetch{
+		Status:      "Ok",
+		StatusCode:  200,
+		AccessToken: token,
+	}
 }
