@@ -12,7 +12,7 @@ import (
 	libResponse "github.com/omaily/JWT/internal/server/response"
 )
 
-func ValidateUser(user *model.User) *libResponse.RequestError {
+func ValidateUser(user *model.User) *libResponse.ResponseFetch {
 
 	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -32,7 +32,7 @@ func ValidateUser(user *model.User) *libResponse.RequestError {
 	return nil
 }
 
-func ValidateError(e validator.ValidationErrors) *libResponse.RequestError {
+func ValidateError(e validator.ValidationErrors) *libResponse.ResponseFetch {
 
 	res := libResponse.Error(errors.New("failed validete structure"))
 

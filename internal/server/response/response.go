@@ -1,24 +1,32 @@
 package response
 
-func Ok(a ...string) *RequestError {
+func Bearer(token string) *ResponseFetch {
+	return &ResponseFetch{
+		Status:      "Ok",
+		StatusCode:  200,
+		AccessToken: token,
+	}
+}
+
+func Ok(a ...string) *ResponseFetch {
 	// проверка на nil не нужна, так как поле id опционально
-	return &RequestError{
+	return &ResponseFetch{
 		Status:     "Ok",
 		StatusCode: 200,
 		Id:         a,
 	}
 }
 
-func Error(errReq error) *RequestError {
-	return &RequestError{
+func Error(errReq error) *ResponseFetch {
+	return &ResponseFetch{
 		Status:     "Error",
 		StatusCode: 400,
 		TextError:  errReq.Error(),
 	}
 }
 
-func ServerError() *RequestError {
-	return &RequestError{
+func ServerError() *ResponseFetch {
+	return &ResponseFetch{
 		Status:     "Error",
 		StatusCode: 500,
 		TextError:  "internal server error",

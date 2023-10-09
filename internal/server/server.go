@@ -10,19 +10,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
 	"github.com/omaily/JWT/config"
-	"github.com/omaily/JWT/internal/server/middlewareRedef"
+	"github.com/omaily/JWT/internal/server/controller"
+	"github.com/omaily/JWT/internal/server/midlewares"
 	"github.com/omaily/JWT/internal/storage"
 )
 
-type apiServer struct {
+type ApiServer struct {
 	conf    *config.HTTPServer
 	storage *storage.Storage
 }
 
-func NewServer(conf *config.HTTPServer, instance *storage.Storage) (*apiServer, error) {
+func NewServer(conf *config.HTTPServer, instance *storage.Storage) (*ApiServer, error) {
 	if conf == nil {
 		return nil, errors.New("configuration files are not initialized")
 	}
@@ -30,13 +31,13 @@ func NewServer(conf *config.HTTPServer, instance *storage.Storage) (*apiServer, 
 		return nil, errors.New("configuration files address cannot be blank")
 	}
 
-	return &apiServer{
+	return &ApiServer{
 		conf:    conf,
 		storage: instance,
 	}, nil
 }
 
-func (s *apiServer) Start(logger *slog.Logger) error {
+func (s *ApiServer) Start(logger *slog.Logger) error {
 
 	ser := &http.Server{
 		Addr:         s.conf.Port,
@@ -64,15 +65,14 @@ func (s *apiServer) Start(logger *slog.Logger) error {
 	return ser.Shutdown(ctx)
 }
 
-func (s *apiServer) router(logger *slog.Logger) http.Handler {
+func (s *ApiServer) router(logger *slog.Logger) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
-	router.Use(middlewareRedef.New(logger))
+	router.Use(midlewares.New(logger))
 
-	router.Post("/", s.helloWorld())
-	router.Post("/api/auth/createAccount", s.authorized(s.storage.CreateAccount))
-	router.Post("/api/auth/login", s.authorized(s.storage.LoginAccount))
+	controller.Router(router, s.storage) // Публичные маршруты
+	controller.RouterSecure(router)      // Безопасные маршруты
 
 	return router
 }

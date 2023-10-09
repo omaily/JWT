@@ -1,23 +1,19 @@
 package response
 
-type RequestError struct {
-	Status     string          `json:"status"`
-	StatusCode int             `json:"status_code"`
-	Err        error           `json:"err,omitempty"`
-	TextError  string          `json:"error,omitempty"`
-	Id         []string        `json:"id,omitempty"` //возвращается при Insert или Update
-	Valid      []ValidateError `json:"validateError,omitempty"`
-}
-
-func (r *RequestError) Error() string {
-	return r.Err.Error()
+type ResponseFetch struct {
+	Status      string          `json:"status"`
+	StatusCode  int             `json:"status_code"`
+	TextError   string          `json:"error,omitempty"`
+	Id          []string        `json:"id,omitempty"` //возвращается при Insert или Update
+	AccessToken string          `json:"access_token,omitempty"`
+	Valid       []ValidateError `json:"validateError,omitempty"`
 }
 
 type ValidateError struct {
-	NameStruct    string `json:"nameStruct"`
+	NameStruct    string `json:"name_struct"`
 	Type          string `json:"type"`
-	NameFieldJson string `json:"nameFieldJson"`
-	ActualTag     string `json:"actualTag"`
+	NameFieldJson string `json:"name_fieldJson"`
+	ActualTag     string `json:"actual_tag"`
 	Value         string `json:"value"`
 	Message       string `json:"message"`
 }

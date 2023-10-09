@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strconv"
 	"time"
 
+	auth "github.com/omaily/JWT/internal/jwt"
 	model "github.com/omaily/JWT/internal/model/user"
+	libResponse "github.com/omaily/JWT/internal/server/response"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,7 +40,7 @@ func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string,
 	passwordCript, err := user.SetPassword()
 	if err != nil {
 		logger.Error("bcrypt library generation error", slog.String("err", err.Error()))
-		return "error", errors.New("server internal error")
+		return "err", &libResponse.InternalError{}
 	}
 
 	result, err := st.connectUser.InsertOne(ctx, &model.User{
@@ -49,11 +51,11 @@ func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string,
 		CreatedAt: time.Now(),
 	})
 	if err != nil {
-		logger.Error("error insert", slog.String("err", err.Error()))
+		logger.Error("mongoDB error insert", slog.String("err", err.Error()))
 		if mongo.IsDuplicateKeyError(err) { // ошибка unique index email_1
-			return "error", errors.New("this email is already registered")
+			return "err", errors.New("this email is already registered")
 		}
-		return "error", errors.New("server internal error")
+		return "err", &libResponse.InternalError{}
 	}
 
 	temp := result.InsertedID.(primitive.ObjectID).Hex()
@@ -77,6 +79,11 @@ func (st *Storage) LoginAccount(ctx context.Context, user *model.User) (string, 
 		return "error", errors.New("access denied")
 	}
 
-	temp := strconv.FormatBool(true)
-	return temp, nil
+	tokenString, err := auth.GenerateToken(user)
+	if err != nil {
+		logger.Error("error creating token", slog.String("err", err.Error()))
+		return "err", &libResponse.InternalError{}
+	}
+
+	return tokenString, nil
 }
