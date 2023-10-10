@@ -2,54 +2,100 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	model "github.com/omaily/JWT/internal/model/user"
 )
 
-var jwtKey = []byte(os.Getenv("JWTKEY"))
+var (
+	jwtKey               = []byte(os.Getenv("JWTKEY"))
+	AccessTokenLifetime  = 2 * time.Hour
+	RefreshTokenLifetime = 72 * time.Hour
+)
 
 type Claims struct {
+	GUID     string `json:"id"`
 	Email    string `json:"email"`
 	Username string `json:"name"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(u *model.User) (string, error) {
-
-	expirationTime := jwt.NewNumericDate(time.Now().Add(time.Hour * 72))
+func GenerateToken(id string, email string, username string) (*http.Cookie, error) {
+	expirationTime := time.Now().Add(AccessTokenLifetime)
+	jwtExpirationTime := jwt.NewNumericDate(expirationTime)
 	claims := &Claims{
-		Email:    u.Email,
-		Username: u.Name,
+		GUID:     id,
+		Email:    email,
+		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: expirationTime,
+			ExpiresAt: jwtExpirationTime,
 			Issuer:    "my crew, my gang, my family",
 		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	return token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("сгенерирован новый токен")
+	return &http.Cookie{
+		Name:    "access_token",
+		Path:    "/",
+		Value:   tokenString,
+		Expires: expirationTime,
+	}, nil
 }
 
-func ValidateToken(tokenString string) error {
+func ValidateToken(tokenArrived string) error {
 	logger := slog.With(
 		slog.String("konponent", "jwt.ValidateToken"),
 	)
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{},
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(jwtKey), nil
-		})
-	if err != nil {
+	if _, err := checkSignature(tokenArrived); err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 
-	if _, ok := token.Claims.(*Claims); ok && token.Valid {
-		return nil
-	} else {
+	return nil
+}
+
+func MaintainToken(tokenArrived string) (*http.Cookie, error) {
+
+	logger := slog.With(
+		slog.String("konponent", "jwt.MaintainToken"),
+	)
+
+	claims, err := checkSignature(tokenArrived)
+	if err != nil {
 		logger.Error(err.Error())
-		return errors.New("token expired")
+		return nil, err
+	}
+
+	realLifeTimeToken := AccessTokenLifetime - time.Until(claims.ExpiresAt.Time)
+	if realLifeTimeToken < time.Minute {
+		err := errors.New("too little time has passed since the token was created")
+		logger.Error(err.Error())
+		return nil, err
+	}
+	return GenerateToken(claims.GUID, claims.Email, claims.Username)
+}
+
+func checkSignature(tokenArrived string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenArrived, &Claims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(jwtKey), nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	} else {
+		return nil, errors.New("token expired")
 	}
 }

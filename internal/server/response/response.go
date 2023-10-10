@@ -43,21 +43,20 @@ func ErrReview(err error) render.Renderer {
 		return ErrInvalidRequest(err)
 	}
 }
+func ErrValidaete(err error) *ErrResponse {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: 400,
+		StatusText:     "Invalid validate",
+		ErrorText:      err.Error(),
+	}
+}
 
 func ErrInvalidRequest(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
 		HTTPStatusCode: 400,
 		StatusText:     "Invalid request",
-		ErrorText:      err.Error(),
-	}
-}
-
-func ErrValidaete(err error) *ErrResponse {
-	return &ErrResponse{
-		Err:            err,
-		HTTPStatusCode: 400,
-		StatusText:     "Invalid validate",
 		ErrorText:      err.Error(),
 	}
 }

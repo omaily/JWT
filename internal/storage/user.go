@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	auth "github.com/omaily/JWT/internal/jwt"
 	model "github.com/omaily/JWT/internal/model/user"
 	libResponse "github.com/omaily/JWT/internal/server/response"
 
@@ -63,7 +62,7 @@ func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string,
 	return temp, nil
 }
 
-func (st *Storage) LoginAccount(ctx context.Context, user *model.User) (string, error) {
+func (st *Storage) LoginAccount(ctx context.Context, user *model.User) error {
 
 	logger := slog.With(
 		slog.String("konponent", "storage.user.LoginAccount"),
@@ -71,19 +70,19 @@ func (st *Storage) LoginAccount(ctx context.Context, user *model.User) (string, 
 
 	storedUser, err := st.identification(ctx, user)
 	if err != nil {
-		return "error", err
+		return err
 	}
 
 	if user.CheckPassword(storedUser.Password) {
 		logger.Error("wrong password")
-		return "error", errors.New("access denied")
+		return errors.New("access denied")
 	}
 
-	tokenString, err := auth.GenerateToken(user)
-	if err != nil {
-		logger.Error("error creating token", slog.String("err", err.Error()))
-		return "err", &libResponse.InternalError{}
-	}
+	// tokenString, err := auth.GenerateToken(user)
+	// if err != nil {
+	// 	logger.Error("error creating token", slog.String("err", err.Error()))
+	// 	return "err", &libResponse.InternalError{}
+	// }
 
-	return tokenString, nil
+	return nil
 }

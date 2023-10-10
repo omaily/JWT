@@ -1,0 +1,6 @@
+
+@host = localhost:4000
+// Access a Secured API Endpoint
+POST http://{{host}}/api/order HTTP/1.1
+content-type: application/json
+Cookie: access_token=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1MjE1MjE5NWRhN2I2ZjUzYjM4MWQzMyIsImVtYWlsIjoiaHVnb0BtYWlsLnJ1IiwibmFtZSI6ImFkbWluIiwiaXNzIjoibXkgY3JldywgbXkgZ2FuZywgbXkgZmFtaWx5IiwiZXhwIjoxNjk2OTIyNDU3fQ.2onYO1WCY8Jvy9bIOXLnhRKY3hCxtuv7gBPP0mO56PUBQgfHjvnigLYFZdtufg6hZtNMGdaerKtlb4AOiipSrg; Path=/; Expires=Tue, 10 Oct 2023 07:20:57 GMT

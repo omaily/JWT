@@ -1,4 +1,4 @@
-db.auth('root', 'rootpasswd') 
+db.auth('root', 'rootpasswd') //
 // db = db.getSiblingDB('admin').auth(
 //     process.env.MONGO_INITDB_ROOT_USERNAME,
 //     process.env.MONGO_INITDB_ROOT_PASSWORD
