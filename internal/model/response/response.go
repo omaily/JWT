@@ -28,14 +28,11 @@ type ErrResponse struct {
 }
 
 type ValidateError struct {
-	NameStruct    string `json:"name_struct"`
-	Type          string `json:"type"`
-	NameFieldJson string `json:"name_fieldJson"`
-	ActualTag     string `json:"actual_tag"`
-	Value         string `json:"value"`
-	Message       string `json:"message"`
-	// Field:     string `json:"field"`
-	// Tag:       string `json:"tag"`
+	Field     string `json:"field"`
+	Type      string `json:"type"`
+	FieldJSON string `json:"fieldJson"`
+	Value     string `json:"value"`
+	Message   string `json:"message"`
 }
 
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {

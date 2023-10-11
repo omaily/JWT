@@ -45,6 +45,9 @@ func GeneratePairToken(userId string) (*http.Cookie, string, error) {
 		return nil, "", err
 	}
 
+	// "bcrypt: password length exceeds 72 bytes"
+	// refreshTokenCript, err := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
+
 	theRedis[userId] = PairToken{
 		RefreshToken: refreshToken,
 		AccessToken:  accessClaims.UUID,
@@ -121,6 +124,7 @@ func MaintainToken(refreshtoken string, accesstoken string) (string, error) {
 	}
 
 	pair := theRedis[userID]
+
 	if pair.RefreshToken != refreshtoken || pair.AccessToken != accessclaims.UUID {
 		err := errors.New("token not found")
 		logger.Error(err.Error())

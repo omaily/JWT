@@ -13,7 +13,6 @@ import (
 )
 
 func ValidateUser(user *model.User) *libResponse.ErrResponse {
-
 	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		// Нужен только первый тег json (игнорируем omitempty)
@@ -33,23 +32,16 @@ func ValidateUser(user *model.User) *libResponse.ErrResponse {
 }
 
 func ValidateError(e validator.ValidationErrors) *libResponse.ErrResponse {
-
 	res := libResponse.ErrValidaete(errors.New("failed validete structure"))
-
 	for _, err := range e { // ошибка может прийти не по одному полю
 		e := libResponse.ValidateError{
-
-			NameStruct:    err.StructField(),
-			Type:          fmt.Sprintf("%v", err.Type()),
-			NameFieldJson: err.Field(),
-			Message:       err.Error(),
-			Value:         fmt.Sprintf("%v", err.Value()),
-			// Value:         err.Param(),
-			// Field:         err.StructNamespace(),
-			// Tag:           err.Tag(),
+			Field:     err.StructNamespace(),
+			Type:      fmt.Sprintf("%v", err.Type()),
+			FieldJSON: err.Field(),
+			Message:   err.Error(),
+			Value:     err.Param(),
 		}
 		res.Valid = append(res.Valid, e)
 	}
-
 	return res
 }

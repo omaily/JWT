@@ -79,11 +79,5 @@ func (st *Storage) LoginAccount(ctx context.Context, user *model.User) error {
 		return errors.New("access denied")
 	}
 
-	// tokenString, err := auth.GenerateToken(user)
-	// if err != nil {
-	// 	logger.Error("error creating token", slog.String("err", err.Error()))
-	// 	return "err", &libResponse.InternalError{}
-	// }
-
 	return nil
 }
