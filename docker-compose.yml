@@ -10,6 +10,14 @@ services:
     volumes:
       - mongo_data:/mongodb/data
       - ./migrate/mongo-init.js:/docker-entrypoint-initdb.d/init-mongo.js
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisDB:/data
 
 volumes:
     mongo_data:
+    redisDB:

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	libResponse "github.com/omaily/JWT/internal/model/response"
 	model "github.com/omaily/JWT/internal/model/user"
-	libResponse "github.com/omaily/JWT/internal/server/response"
 )
 
 func ValidateUser(user *model.User) *libResponse.ErrResponse {
@@ -38,11 +38,15 @@ func ValidateError(e validator.ValidationErrors) *libResponse.ErrResponse {
 
 	for _, err := range e { // ошибка может прийти не по одному полю
 		e := libResponse.ValidateError{
+
 			NameStruct:    err.StructField(),
 			Type:          fmt.Sprintf("%v", err.Type()),
 			NameFieldJson: err.Field(),
-			Value:         fmt.Sprintf("%v", err.Value()),
 			Message:       err.Error(),
+			Value:         fmt.Sprintf("%v", err.Value()),
+			// Value:         err.Param(),
+			// Field:         err.StructNamespace(),
+			// Tag:           err.Tag(),
 		}
 		res.Valid = append(res.Valid, e)
 	}

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
+	libResponse "github.com/omaily/JWT/internal/model/response"
 	model "github.com/omaily/JWT/internal/model/user"
-	libResponse "github.com/omaily/JWT/internal/server/response"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -49,10 +49,11 @@ func (st *Storage) CreateAccount(ctx context.Context, user *model.User) (string,
 		Password:  string(passwordCript),
 		CreatedAt: time.Now(),
 	})
+
 	if err != nil {
 		logger.Error("mongoDB error insert", slog.String("err", err.Error()))
 		if mongo.IsDuplicateKeyError(err) { // ошибка unique index email_1
-			return "err", errors.New("this email is already registered")
+			return "err", &libResponse.AlreadyExistsError{}
 		}
 		return "err", &libResponse.InternalError{}
 	}

@@ -5,32 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
-var (
-	jwtKey               = []byte(os.Getenv("JWTKEY"))
-	AccessTokenLifetime  = 2 * time.Hour
-	RefreshTokenLifetime = 72 * time.Hour
-)
-
-type Claims struct {
-	GUID     string `json:"id"`
-	Email    string `json:"email"`
-	Username string `json:"name"`
-	jwt.RegisteredClaims
-}
-
-func GenerateToken(id string, email string, username string) (*http.Cookie, error) {
-	expirationTime := time.Now().Add(AccessTokenLifetime)
+func GenerateToken(userId string, typeToken *ModifierToken) (*Claims, string, error) {
+	expirationTime := time.Now().Add(typeToken.Expires)
 	jwtExpirationTime := jwt.NewNumericDate(expirationTime)
 	claims := &Claims{
-		GUID:     id,
-		Email:    email,
-		Username: username,
+		UUID: uuid.New(),
+		GUID: userId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwtExpirationTime,
 			Issuer:    "my crew, my gang, my family",
@@ -38,24 +24,55 @@ func GenerateToken(id string, email string, username string) (*http.Cookie, erro
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(typeToken.Key)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	fmt.Println("сгенерирован новый токен")
+
+	return claims, tokenString, nil
+}
+
+func GeneratePairToken(userId string) (*http.Cookie, string, error) {
+	accessClaims, accessToken, err := GenerateToken(userId, AccessToken)
+	if err != nil {
+		slog.Error("error maintain token", slog.String("err", err.Error()))
+		return nil, "", err
+	}
+
+	refreshClaims, refreshToken, err := GenerateToken(userId, RefreshToken)
+	if err != nil {
+		slog.Error("error maintain token", slog.String("err", err.Error()))
+		return nil, "", err
+	}
+
+	theRedis[userId] = PairToken{
+		RefreshToken: refreshToken,
+		AccessToken:  accessClaims.UUID,
+	}
+
 	return &http.Cookie{
-		Name:    "access_token",
+		Name:    RefreshToken.Name,
 		Path:    "/",
-		Value:   tokenString,
-		Expires: expirationTime,
-	}, nil
+		Value:   refreshToken,
+		Expires: refreshClaims.ExpiresAt.Time,
+	}, accessToken, err
 }
 
 func ValidateToken(tokenArrived string) error {
 	logger := slog.With(
 		slog.String("konponent", "jwt.ValidateToken"),
 	)
-	if _, err := checkSignature(tokenArrived); err != nil {
+
+	claims, err := parseToken(tokenArrived)
+	if err != nil {
+		fmt.Println("!nil")
+		logger.Error(err.Error())
+		return err
+	}
+
+	pair := theRedis[claims.GUID]
+	if pair.AccessToken != claims.UUID {
+		err := errors.New("token not found")
 		logger.Error(err.Error())
 		return err
 	}
@@ -63,39 +80,75 @@ func ValidateToken(tokenArrived string) error {
 	return nil
 }
 
-func MaintainToken(tokenArrived string) (*http.Cookie, error) {
+func MaintainToken(refreshtoken string, accesstoken string) (string, error) {
 
 	logger := slog.With(
 		slog.String("konponent", "jwt.MaintainToken"),
 	)
 
-	claims, err := checkSignature(tokenArrived)
+	refreshclaims, err := parseToken(refreshtoken)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return "", err
 	}
 
-	realLifeTimeToken := AccessTokenLifetime - time.Until(claims.ExpiresAt.Time)
-	if realLifeTimeToken < time.Minute {
-		err := errors.New("too little time has passed since the token was created")
+	accessclaims, err := parseToken(accesstoken)
+	switch {
+	case err != nil && err.Error() == "token has invalid claims: token is expired":
 		logger.Error(err.Error())
-		return nil, err
+	case err != nil:
+		logger.Error(err.Error())
+		return "", err
 	}
-	return GenerateToken(claims.GUID, claims.Email, claims.Username)
+
+	fmt.Println(time.Until(accessclaims.ExpiresAt.Time))
+
+	almostExpired := time.Until(accessclaims.ExpiresAt.Time)
+	// нет смысла обновлять раньше чем за 5 минут до истечения
+	if almostExpired > 5*time.Minute {
+		err := errors.New("too little time has passed since the token was created")
+		logger.Error(err.Error(), slog.String("token hasn't expired", almostExpired.String()))
+		return "", err
+	}
+
+	var userID string
+	if refreshclaims.GUID != accessclaims.GUID {
+		err := errors.New("tokens are not linked")
+		logger.Error(err.Error())
+		return "", err
+	} else {
+		userID = refreshclaims.GUID
+	}
+
+	pair := theRedis[userID]
+	if pair.RefreshToken != refreshtoken || pair.AccessToken != accessclaims.UUID {
+		err := errors.New("token not found")
+		logger.Error(err.Error())
+		return "", err
+	}
+
+	newclaims, newtoken, err := GenerateToken(userID, AccessToken)
+	if err != nil {
+		slog.Error("error maintain token", slog.String("err", err.Error()))
+		return "", err
+	}
+	pair.AccessToken = newclaims.UUID
+	theRedis[userID] = pair
+
+	return newtoken, err
 }
 
-func checkSignature(tokenArrived string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenArrived, &Claims{},
+func parseToken(tokenArrived string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenArrived,
+		&Claims{},
 		func(token *jwt.Token) (interface{}, error) {
-			return []byte(jwtKey), nil
+			return []byte(accessKey), nil
 		})
-	if err != nil {
-		return nil, err
-	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	} else {
-		return nil, errors.New("token expired")
+		return claims, err
 	}
 }
